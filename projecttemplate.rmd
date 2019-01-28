@@ -1,0 +1,498 @@
+Loan Data Exploration by Ramiz Assaf
+========================================================
+
+> **Tip**: You will see quoted sections like this throughout the template to
+help you construct your report. Make sure that you remove these notes before
+you finish and submit your project!
+
+> **Tip**: One of the requirements of this project is that your code follows
+good formatting techniques, including limiting your lines to 80 characters or
+less. If you're using RStudio, go into Preferences \> Code \> Display to set up
+a margin line to help you keep track of this guideline!
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+#install.packages("ggplot2", dependencies = T) 
+#install.packages("knitr", dependencies = T)
+#install.packages("dplyr", dependencies = T)
+#install.packages("ggplot2", repos = 'http://cran.us.r-project.org')
+
+library(ggplot2)
+library(knitr)
+library(dplyr)
+```
+
+
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+df_all <- read.csv('prosperLoanData.csv')
+head(df_all)
+```
+
+This report explores a dataset containing a subset of 81 variables for \
+approximately 113,937 loans.
+
+# Univariate Plots Section
+
+
+First we need to understand the type of each variable in the datafram using the str functions.
+I have selected a number of variables. 
+
+```{r echo=FALSE}
+myvars <- c("Term", "CreditGrade", "BorrowerAPR", "EstimatedReturn", "EmploymentStatus", "IsBorrowerHomeowner", "IncomeRange",  "ProsperScore" , "LoanStatus", "BorrowerState")
+
+df <-subset(df_all,  select = myvars)
+str(df)
+```
+
+We have in our new subset all data types needed.
+Now we are going to explore summaries for some variables to understand the \
+data set better:
+
+```{r echo=FALSE }
+print(summary(df))
+```
+
+Term variable is interesting, most of the loan terms are 36 months. To \
+look at it bettet I will apply table function
+```{r echo=FALSE }
+print(table(df$Term))
+```
+
+Majority of the loan terms is 36 months.
+
+We can also take a look at the variable 'BorrowerAPR'
+
+50% of the BorrowerAPR range between 15.6% and 28.3%. We have 25 missing  \
+ values as well.
+
+the variable "CreditGrade"" has a lot of blank rows. 
+
+The variable EmployemntStatus has multiple Other values, I think it should be \
+combined before processing.
+
+With regard to EstimatedReturns Not all loans generated positive returns, some \
+of them were losses. to count how many losses we can apply:
+
+```{r echo=FALSE }
+print(summary(df$EstimatedReturn > 0))
+```
+
+```{r echo=FALSE }
+print(sort(table(df$BorrowerState)))
+```
+
+Most loans were given to Calafornia, Texas then New York and Florida.
+
+We also can look the satus of employment for the borrower:
+
+```{r echo=FALSE }
+print(summary(df$EmploymentStatus))
+```
+
+most of the Borrowers are 'Employed', 2nd group is full-time, it is not clear to me if they indicate the same.
+
+```{r echo=FALSE }
+print(summary(df$LoanStatus))
+```
+
+Finally, we can look at the number of Recommendations the borrower provided \
+for his loan.
+
+
+Now we will plot some variables, we will try to observe patterns, strange \ 
+behaviors, outliers...etc
+
+
+```{r echo=FALSE, Univariate1_Plots}
+df$CreditGrade2 <- factor(df$CreditGrade, levels=c("AA", "A", "B", "C", "D", "E", "HR", "NC", " "))
+ggplot(aes(x = CreditGrade2), data = df)+ geom_bar() + xlab('Borrower Credit Grade') + labs(title='The count of different Credit Grades for Borrowers')
+```
+
+Majority withour a Credit Grade estimate.
+
+Now we can plot other variables to get a good understanding of the data.
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(aes(x = CreditGrade2), data = df[(df$CreditGrade) != "", ])+ geom_bar(fill="blue") + xlab('Borrower Credit Grade') + labs(title='The count of different Credit Grades for Borrowers')
+```
+
+The highest Credit grades given are C, then D and B. 
+I reorded them as level AA is higher than A
+
+
+```{r echo=FALSE, Univariate2_Plots}
+ggplot(aes(x =Term), data = df )+ geom_bar(fill='blue', color="darkblue", width = 8) + labs(title = ' Barchart of the loan TERM in months' ) + xlab('duration in months') + scale_x_discrete(limits = c(12,36,60))
+```
+
+Most of the terms are 36 month.
+
+```{r echo=FALSE, Univariate3_Plots, message=FALSE}
+ggplot(aes(x = BorrowerAPR, rm.na = TRUE ), data = df )+ geom_histogram(fill='orange', color = 'white', bins = 40) + labs(title = "A Histogram for the Annual Percentage Rate given for Prosper loans", x ='The Annual Percentage Rate (APR)') + scale_x_continuous(labels = scales::percent)
+```
+
+
+The majority of the APR values are between 10% and 35%. 
+
+
+
+
+Now we can also look the revenue using the following code:
+
+
+```{r echo=FALSE, Univariate6_Plots}
+ggplot(aes(x= EstimatedReturn, rm.na = TRUE), data = df) + geom_histogram(fill ='darkblue', bins = 25) + labs(title =" The Loan Percentage Return", x ='Loan Percentage Return') + scale_x_continuous(labels = scales::percent, limits = c(-0.1, 0.25))
+```
+
+This histogram is far from being normal, it has a high peak. 
+
+
+```{r echo=FALSE, Univariate7_Plots}
+ggplot(aes(x= ProsperScore), data = df) + geom_bar(fill ='darkblue') + labs(title =" The Loan Percentage Return", x ='Prosper Score')
+```
+
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+The data has a dataframe sturcute with variable being in columns and recored \
+reperesnt a loan case. 81 variables for approximately 113,937 loans.
+We took a subset of 10 variables
+
+Most borrowers are from California and Texas. Loans are usually 36 months.
+The average Reurn is about 0.1 majority of loans are not classified with \
+regard of risk. Of those classified, most classified categories are C and D.
+
+### What is/are the main feature(s) of interest in your dataset?
+The mean features is the Status of the Loan. Is is going to be paid? can we see \ 
+patterns for when a loan is defaulted? we need to investigate
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+I choose the 10 variables after I examined the data a bit, I think I will \ 
+be using them to predict the outcome of a loan to be paid on time or defaulted.
+
+### Did you create any new variables from existing variables in the dataset?
+On the contrary I removed some variables from the analysis as it would be hard \ 
+explore them now. Plus at this point it is not needed, the data set has 81 \
+variables covering a lot of ascpects. But indirectly I changed the order of \
+factors
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+I did it couple of times, where I had to remove NA instances
+Some outliers exist, no need to remove them just now. they arw within limits. 
+
+# Bivariate Plots Section
+
+
+
+Would there be a relationship between the duration of the loan  \
+and the BorowerAPR?
+
+```{r echo=FALSE, Bivariate_Plots3}
+ggplot(aes(y = BorrowerAPR, x = Term, rm.na = TRUE), data = df )+ geom_point(alpha = 1/100)+ labs(title="A Scatter plot between the Loan TERM and BorroweAPR", x = "Loan Duration TERM (in months)", y = "Borrower APR") + scale_y_continuous(labels=scales::percent)
+```
+
+I think at this point, there is not clear relationship \
+between these two variables.
+
+We need to replace the scatter with boxplot
+
+```{r echo=FALSE, Bivariate2_Plots}
+df[,'Term2']<-factor(df[,'Term'])
+ggplot(aes(y = BorrowerAPR ,x = Term2,  fill = Term2), data = df )+ geom_violin(draw_quantiles = c(0.25,0.5,0.75))+ labs(title="A Scatter plot between the Loan TERM and BorroweAPR", x = "Loan Duration TERM (in months)", y = "Borrower APR") + scale_y_continuous(labels=scales::percent) + scale_x_discrete() + scale_fill_discrete(guide=FALSE)
+```
+
+The plot shows that loans of a term 12 months have an quasi-uniform \ 
+distribution for the APR loans with a term 36 have the highest range, \
+surprizingly the mode is about 36% while loans with term equal to \
+60 the average is about 20%
+\
+```{r}
+cor.test(df$Term, df$BorrowerAPR)
+```
+
+The correlation test indicates there is a very very weak inverse relationship.
+
+
+
+Q. Would loans classified with higher risk, have higher APR?
+
+```{r}
+ggplot(aes(y = BorrowerAPR, x = ProsperScore), data = df )+ geom_point(alpha = 1/50)
+```
+
+The variable ProsperScore indicates a numerical estimation of the risk, \
+the higher the number the lower the risk. the plot shows there is  \
+a inverse relationship. to quantify this value we use the correlation test
+
+```{r, echo=FALSE}
+cor.test(df$BorrowerAPR,df$ProsperScore)
+```
+
+There is a strong relationship between the two variables, this makes perfect \ 
+sense as the higher the risk usually higher the APR. Again the high risk \ 
+is indicated with a low Prosper value.
+
+
+Q. Would loans classified with higher risk for longer Terms, have higher APR ?
+
+```{r, echo=FALSE}
+ggplot(aes(y =BorrowerAPR , x = df$EmploymentStatus), data = df )+ geom_boxplot(aes(fill = df$Term2))+labs( title = "a box-plot Prosper Score vs Borrower APR for home owners and non- home owners" , y = " Borrower APR" ,x= "Prosper Score" , color='Is a Home Owner?' ) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+The APR for "Not Employed" is higher, followed by Self-Employed. Furthermore, \
+Terms with 12 months have gnerally higher APR.
+
+we can at a different figure using the following code.
+Instead of the Prosper Score we can look at the Credit Grade and if the\
+borrower has a home or not.
+
+The APR increase with lower classification.
+Having a home generally increases the APR.
+
+
+```{r, echo=FALSE}
+ggplot(aes(y = BorrowerAPR, x = CreditGrade2), data = df )+ geom_boxplot(aes(color = df$IsBorrowerHomeowner), alpha = 1/10, fill = 'darkblue')+labs( title = "a Scatter plot Credit Grade vs Borrower APR for home owners and non- home owners" , y = " Borrower APR" ,x= "Credit Grade" , color='Is a Home Owner?')
+```
+
+It confirms the relationship as the dark blue dots are the home owners, \
+most of them are classified AA to C, where as those who do not own a home \
+are in most cases classified from D to NC.
+
+Now can we say something about the BorrowerAPR vs Estimated return?
+
+```{r echo=FALSE, bivar5_Plots, message=FALSE}
+ggplot(aes(x = BorrowerAPR, y = EstimatedReturn, rm.na = TRUE ), data = df )+ geom_point(fill='orange', color = 'blue' ) + labs(title = "A Scatter plot for the Annual Percentage Rate vs Borrower APR ", y ='The Annual Percentage Rate (APR)' , x= 'Borrower APR')
+```
+
+It seems there is somehow some corrleation.But it also seems something else is \
+affecting the relationship
+
+
+
+Another thing comes into mind, what is the relationship between Risk and status \
+of the loan?
+
+```{r, echo=FALSE}
+ggplot(aes(y = LoanStatus, x = CreditGrade2), data = df )+ geom_tile(fill ='blue' , alpha = 1/200)+labs( title = "a Scatter plot Credit Grade vs Loan Status" , y = " Loan Status" ,x= "Credit Grade" ) 
+ 
+```
+
+This figure shows some intresting patterns
+If we look at the Defaulted row, we can notice the color is becoming darker, \
+showing there is a strong relationship with the number defaulted with the \
+Credit Grade.
+
+The smae pattern is happenning to Chargedoff Loans i.e. the lower \
+the Credit Grade the the more the chance of a Chargeoff
+
+The Loans called Completed has an opposite relationship, the higher the Credit \
+Grade the more loans are completed. The dots are fader with lower credit Grade.
+
+Some parts are missing, there are not complete information about late Loans \
+(or they are very few, we can know if we set alpha = 1)
+
+
+The same plot can be done for the Employment variable. It goes as follows:
+
+```{r, echo=FALSE}
+
+ggplot(aes(y = LoanStatus, x = EmploymentStatus), data = df )+ geom_tile( alpha = 1/50)+labs( title = "a Scatter plot Employment Status vs Loan Status" , y = " Loan Status" ,x= "Employment Status" ) + theme(axis.text.x = element_text(angle = 90, hjust=0)) +
+  scale_x_discrete(position = "bottom")
+```
+
+
+It seems Employment Status: Employed and Full-Time have the better \ 
+chances of completing their loans. Employment status needs more \ 
+examination as the variable has gaps that are not easy to explain \
+
+To evalute if there is relationship betwee all studied variable. \
+we use a matrix plot 
+
+
+```{r echo= FALSE, message= FALSE}
+#install.packages("GGally")
+library('GGally')
+drops <- c("BorrowerState", 'CreditGrade', 'EmploymentStatus', 'IsBorrowerHomeowner', 'IncomeRange', 'LoanStatus', 'BorrowerState', 'CreditGrade2', 'Term2', 'LoanStatusFactor')
+df2 <- df[ , !(names(df) %in% drops)]
+ggcorr(df2)
+
+```
+
+
+```{r echo= FALSE}
+cor.test(df$BorrowerAPR,df$EstimatedReturn)
+
+```
+
+This is the highest correlation found.
+
+# Bivariate Analysis
+
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+Yes it did vary, for example, the complete loans are affected \ 
+by the employement status.
+
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+
+It is strange though that only employed category have most of the late loans. \
+It doesn't make any senese. The data is not complete or misrecored.
+
+### What was the strongest relationship you found?
+Borrower APR and Estimated Return +0.79
+
+# Multivariate Plots Section
+
+
+```{r echo=FALSE, Multivariate4_Plots}
+ggplot(aes(y = BorrowerAPR, x = CreditGrade2), data = df )+ geom_violin(aes(color = df$IsBorrowerHomeowner ), alpha = 1/100 )+labs( title = "a Scatter plot Credit Grade vs Borrower APR for home owners and non- home owners" , y = " Borrower APR" ,x= "Credit Grade" , color='Is a Home Owner?') 
+
+
+```
+
+It appears that owning a home doesn' affect greatly the BorrowerAPR
+initillay I thought the home owners would enjoy a lower APR but now \ 
+from the figure they actually dont
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+```{r echo=FALSE, Multivariate3_Plots}
+ggplot(aes(y = BorrowerAPR, x = CreditGrade2), data = df )+ geom_point(aes(color = df$IsBorrowerHomeowner ), alpha = 1/100 )+ facet_wrap(df$IncomeRange)  + labs( title = "a Scatter plot Credit Grade vs Borrower APR for home owners and non- home owners" , y = " Borrower APR" ,x= "Credit Grade" , color='Is a Home Owner?') 
+
+
+```
+
+There is a reltionship, it can be seen that income between 75K and 99K are \ 
+mostly homeowners, while income group over 100K are all homeowners.  \ 
+Furthermore the higher the income the higher the classification, \ 
+all of these variables have impact on whether a loan is paid on time \
+or defaulted.
+
+### Were there any interesting or surprising interactions between features?
+Indeed, all unemployed got a Credit Grade of NA. Most of them without home \
+Borrowes with Credit Grade NA exist at all income levels \
+
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the \
+strengths and limitations of your model.
+```{r echo=FALSE, MLR}
+
+fit <- lm(EstimatedReturn ~ BorrowerAPR + IncomeRange + IsBorrowerHomeowner, data=df)
+summary(fit) # show results
+
+
+```
+
+
+I will cancel out the "Income Range" variable
+
+```{r echo=FALSE, MLR2}
+
+fit <- lm(EstimatedReturn ~ BorrowerAPR + IsBorrowerHomeowner, data=df)
+summary(fit) # show results
+
+
+```
+
+These two variable "BorroweAPR" and IsBorroweHomeownerTrue" are significant. 
+It makes sense as the higher the BorrowerAPR it increases the revenues and with home owner being true it decreases the risk.
+
+------
+
+# Final Plots and Summary
+
+> **Tip**: You've done a lot of exploration and have built up an understanding
+of the structure of and relationships between the variables in your dataset.
+Here, you will select three plots from all of your previous exploration to
+present here as a summary of some of your most interesting findings. Make sure
+that you have refined your selected plots for good titling, axis labels (with
+units), and good aesthetic choices (e.g. color, transparency). After each plot,
+make sure you justify why you chose each plot by describing what it shows.
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+ggplot(aes(x = BorrowerAPR, rm.na = TRUE ), data = df )+ geom_histogram(fill='orange', color = 'blue' ) + labs(title = "A Hisogram for the Annual Percentage Rate given for Prosper loans", x ='The Annual Percentage Rate (APR)') 
+
+```
+
+
+This histogram shows the distribution of the BorrowersAPR, it is not exactly \
+normally distributed, it has multi modes.
+
+### Description One
+
+In this plot it shows that the highest mode for the Annual Percentage rate APR \
+is around 20%. the plot shows there are no outliers. This plot also shows that \
+the APR is multimodeal distribution (more than two modes)
+
+
+
+
+
+### Plot Two
+
+```{r echo=FALSE, message= FALSE,  Plot_Two}
+ggplot(aes(y = BorrowerAPR, x = CreditGrade2), data = df )+ geom_boxplot(aes(color = df$IsBorrowerHomeowner), alpha = 1/10, fill = 'darkblue')+labs( title = "a Boxplot plot Credit Grade vs Borrower APR for home owners and non- home owners" , y = " Borrower APR" ,x= "Credit Grade" , color='Is a Home Owner?')
+```
+
+
+
+### Description Two
+
+This plot is very intersting, as one would think if the Borrower is not a \
+homeowner they would be charged a higher APR, but what happens is the \
+contrarty in most cases (except NC and NA).
+
+It also should be noted that there are a lot of variation, many values are \ 
+considered outliers .
+
+### Plot Three
+
+```{r echo=FALSE, Multivariate2_Plots}
+ggplot(aes(y = BorrowerAPR, x = CreditGrade2 ), data = df )+ geom_boxplot(aes(color = df$IsBorrowerHomeowner ), alpha = 1/50 )+ facet_wrap(df$IncomeRange)  + labs( title = "a Boxplot Credit Grade vs Borrower APR for home owners and non- home owners for each income range" , y = " Borrower APR" ,x= "Credit Grade" , color='Is a Home Owner?') 
+
+```
+
+### Description Three
+
+For each graph the lower the Credit Classificationm the higher the APR charged.
+In all figures, if one has a home their APR is higher. (maybe it is to help \
+those who dont have homes.)
+
+------
+
+# Reflection
+
+This exploration is a lot of fun. it needs concentration and a lot of \
+support from Udacity. I expected if you have a home you should have\
+been with lesser risk. But results were not connected 100% to the issue.
+
+One interesting question, how can we predict if the Borrower will default given\
+the current information we have?
+
